@@ -22,6 +22,9 @@ contract Verifications{
      mapping (address=>bool)public BuyerVerification;
      mapping(address=>bool)public BuyerRejection;
 
+     event VerifiedAddress (address _Id);
+     event RejectedAddress(address _Id);
+
      modifier onlyLandInspector()
     {
      require (LandInspectorId==msg.sender,"You are Not LandInspector");
@@ -53,6 +56,7 @@ contract Verifications{
      )onlyLandInspector()external
      {
        SellerVerification[sellerId]=true;
+       emit VerifiedAddress(sellerId);
      }
 
      function RejectSeller(
@@ -60,6 +64,7 @@ contract Verifications{
      )onlyLandInspector() external
       {
         SellerRejection[_sellerId]=true;
+        emit RejectedAddress(_sellerId);
       }
 
      function VerifyBuyer(
@@ -67,11 +72,13 @@ contract Verifications{
      )onlyLandInspector()public
      {
        BuyerVerification[BuyerId]=true;
+       emit VerifiedAddress (BuyerId);
      }
 
      function RejectBuyer(address BuyerId)onlyLandInspector()public
      {
        BuyerRejection[BuyerId]=true;
+       emit RejectedAddress (BuyerId);
      }
      }
  
@@ -103,7 +110,6 @@ contract Verifications{
 
       event SellerRegistration (address _id);
       event BuyerRegistration(address _id);
-
       function updateSellerInfo (
         string memory _Name,uint _Age,string memory _City,uint _CNIC,string memory _Email
       )external
@@ -148,7 +154,9 @@ contract Verifications{
          }
          }
 
-     function IsBuyer(address _Id)public view returns(bool)
+     function IsBuyer(
+       address _Id
+       )public view returns(bool)
          {
            if (IsBuyerMappping[_Id]){
              return true;
@@ -171,7 +179,9 @@ contract LandContract is SellerandBuyerDetails {
 
      mapping (uint=>LandReg)public Land; 
      mapping (uint=>address)public LandOwner;
-     event landOwner (address Owner,uint LandId);
+
+     event landOwner (address PreviousOwner,address newowner,uint LandId,uint  amount);
+     event AddedLand(uint _LandId,address owner);
 
      modifier VerifiedAndRejectCheck(){
      require(!SellerRejection[msg.sender],"You Are Rejected Cant Enter Detail");
@@ -186,7 +196,7 @@ contract LandContract is SellerandBuyerDetails {
 
       Land[_LandId]=LandReg(Verification.NotVerified,_Area,_City,_State,_LandPrice,_PropertyPID);
       LandOwner[_LandId]=msg.sender;
-      emit landOwner(msg.sender,_LandId);
+      emit AddedLand(_LandId,LandOwner[_LandId]);
       
      }
      
@@ -209,6 +219,7 @@ contract LandContract is SellerandBuyerDetails {
        require (msg.value==_amount,"Please EnterExactAmount");
        LandOwner[_LandId]=newOwner;
        payable (PreviousOwner).transfer(_amount);
+        emit landOwner(PreviousOwner,msg.sender,_LandId,_amount);
        }
 
      function transferLand(
